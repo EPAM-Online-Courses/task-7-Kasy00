@@ -1,8 +1,13 @@
 package efs.task.reflection;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 public class ClassInspector {
 
@@ -18,7 +23,16 @@ public class ClassInspector {
   public static Collection<String> getAnnotatedFields(final Class<?> type,
       final Class<? extends Annotation> annotation) {
     //TODO usuń zawartość tej metody i umieść tutaj swoje rozwiązanie
-    return Collections.emptyList();
+    Set<String> annotatedFields = new HashSet<>();
+
+    Field[] fields = type.getDeclaredFields();
+    for (Field field : fields) {
+      if (field.isAnnotationPresent(annotation)) {
+        annotatedFields.add(field.getName());
+      }
+    }
+
+    return annotatedFields;
   }
 
   /**
@@ -32,7 +46,22 @@ public class ClassInspector {
    */
   public static Collection<String> getAllDeclaredMethods(final Class<?> type) {
     //TODO usuń zawartość tej metody i umieść tutaj swoje rozwiązanie
-    return Collections.emptyList();
+    Set<String> declaredMethods = new HashSet<>();
+
+    Method[] methods = type.getDeclaredMethods();
+    for (Method method : methods) {
+      declaredMethods.add(method.getName());
+    }
+
+    Class<?>[] interfaces = type.getInterfaces();
+    for (Class<?> interfaceClass : interfaces) {
+      Method[] interfaceMethods = interfaceClass.getDeclaredMethods();
+      for (Method method : interfaceMethods) {
+        declaredMethods.add(method.getName());
+      }
+    }
+
+    return declaredMethods;
   }
 
   /**
@@ -51,6 +80,23 @@ public class ClassInspector {
    */
   public static <T> T createInstance(final Class<T> type, final Object... args) throws Exception {
     //TODO usuń zawartość tej metody i umieść tutaj swoje rozwiązanie
-    return null;
+    Constructor<T>[] constructors = (Constructor<T>[]) type.getDeclaredConstructors();
+    for (Constructor<T> constructor : constructors) {
+      constructor.setAccessible(true);
+      Class<?>[] parameterTypes = constructor.getParameterTypes();
+      if (args.length == parameterTypes.length) {
+        boolean isMatch = true;
+        for (int i = 0; i < args.length; i++) {
+          if (!parameterTypes[i].isInstance(args[i])) {
+            isMatch = false;
+            break;
+          }
+        }
+        if (isMatch) {
+          return constructor.newInstance(args);
+        }
+      }
+    }
+    throw new Exception("Matching constructor not found.");
   }
 }
